@@ -6,7 +6,8 @@ import {
   TrendingUp, Users, AlertTriangle, IndianRupee, Search, Sparkles,
   ArrowUpRight, ArrowDownRight, CheckCircle2, XCircle, Clock,
   Package, Mail, ShoppingCart, Zap, Bell, ChevronRight, Send,
-  Lightbulb, Target, Activity, Command, Phone, Facebook, Instagram
+  Lightbulb, Target, Activity, Command, Phone, Facebook, Instagram,
+  Sun, Moon
 } from 'lucide-react'
 
 // Custom social icons (X, WhatsApp)
@@ -85,7 +86,7 @@ function ToastStack({ toasts }) {
 // ---------------- Sidebar ----------------
 function Sidebar({ activeTab, setActiveTab }) {
   return (
-    <aside className="w-64 shrink-0 border-r border-zinc-800/80 bg-zinc-950 flex flex-col">
+    <aside className="w-64 shrink-0 border-r border-zinc-800/80 sidebar-3d flex flex-col">
       <div className="h-16 px-5 flex items-center gap-2.5 border-b border-zinc-800/80">
         <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center glow-indigo">
           <Sparkles className="h-4 w-4 text-white" />
@@ -154,7 +155,7 @@ function Sidebar({ activeTab, setActiveTab }) {
 }
 
 // ---------------- Header ----------------
-function Header({ company }) {
+function Header({ company, theme, setTheme }) {
   return (
     <header className="h-16 shrink-0 border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur px-6 flex items-center justify-between">
       <div className="flex items-center gap-3">
@@ -174,6 +175,17 @@ function Header({ company }) {
           <Command className="h-3.5 w-3.5" /> <span>K</span>
           <span className="text-zinc-600 ml-1">Ask Sentinel</span>
         </div>
+        <button
+          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          title="Toggle theme"
+          className="h-9 w-9 rounded-md border border-zinc-800 bg-zinc-900/50 flex items-center justify-center hover:bg-zinc-900 hover:scale-110 hover:border-indigo-500/40 transition-all group"
+        >
+          {theme === 'dark' ? (
+            <Sun className="h-4 w-4 text-amber-400 group-hover:rotate-45 transition-transform duration-500" />
+          ) : (
+            <Moon className="h-4 w-4 text-indigo-400 group-hover:-rotate-12 transition-transform duration-500" />
+          )}
+        </button>
         <button className="relative h-9 w-9 rounded-md border border-zinc-800 bg-zinc-900/50 flex items-center justify-center hover:bg-zinc-900 transition">
           <Bell className="h-4 w-4 text-zinc-400" />
           <span className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-rose-500" />
@@ -191,11 +203,11 @@ function Header({ company }) {
 }
 
 // ---------------- Reusable UI ----------------
-function Card({ children, className = '', interactive = true }) {
+function Card({ children, className = '', interactive = true, is3D = true }) {
   return (
     <div className={`rounded-xl border border-zinc-800/80 bg-zinc-900/40 transition-all duration-300 ${
-      interactive ? 'hover:border-zinc-700 hover:bg-zinc-900/60 hover:shadow-2xl hover:shadow-indigo-500/5 hover:-translate-y-0.5' : ''
-    } ${className}`}>
+      is3D ? 'card-3d' : ''
+    } ${interactive && !is3D ? 'hover:border-zinc-700 hover:bg-zinc-900/60 hover:shadow-2xl hover:shadow-indigo-500/5 hover:-translate-y-0.5' : ''} ${className}`}>
       {children}
     </div>
   )
@@ -219,6 +231,24 @@ function SectionTitle({ eyebrow, title, description }) {
       {eyebrow && <div className="text-[11px] uppercase tracking-widest text-indigo-400 font-medium mb-1.5">{eyebrow}</div>}
       <h2 className="text-xl font-semibold text-zinc-100 tracking-tight">{title}</h2>
       {description && <p className="text-sm text-zinc-500 mt-1">{description}</p>}
+    </div>
+  )
+}
+
+function GradientBanner({ from, via, to, icon: Icon, title, subtitle }) {
+  return (
+    <div className={`relative overflow-hidden rounded-2xl p-6 mb-6 border border-zinc-800/80 bg-gradient-to-br ${from} ${via || ''} ${to} animate-gradient`}>
+      <div className="absolute -top-20 -right-20 h-64 w-64 rounded-full bg-white/5 blur-3xl" />
+      <div className="absolute -bottom-16 -left-10 h-40 w-40 rounded-full bg-white/5 blur-2xl" />
+      <div className="relative flex items-center gap-4">
+        <div className="h-14 w-14 rounded-2xl bg-white/10 backdrop-blur border border-white/20 flex items-center justify-center shadow-2xl">
+          <Icon className="h-6 w-6 text-white" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-white tracking-tight">{title}</h1>
+          <p className="text-sm text-white/80 mt-1">{subtitle}</p>
+        </div>
+      </div>
     </div>
   )
 }
@@ -265,15 +295,20 @@ function DashboardView({ company }) {
 
   return (
     <div className="animate-slide-in space-y-8">
-      {/* Executive Briefing */}
-      <div>
-        <div className="text-[11px] uppercase tracking-widest text-indigo-400 font-medium mb-2 flex items-center gap-2">
-          <Sparkles className="h-3 w-3" /> Executive Briefing · {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+      {/* Executive Briefing Hero */}
+      <div className="relative overflow-hidden rounded-2xl border border-zinc-800/80 bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-600 p-8 animate-gradient">
+        <div className="absolute -top-24 -right-16 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
+        <div className="absolute -bottom-16 -left-16 h-56 w-56 rounded-full bg-amber-400/20 blur-3xl" />
+        <div className="absolute inset-0 grid-backdrop opacity-30" />
+        <div className="relative">
+          <div className="text-[11px] uppercase tracking-widest text-white/80 font-medium mb-3 flex items-center gap-2">
+            <Sparkles className="h-3 w-3" /> Executive Briefing · {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+          </div>
+          <h1 className="text-4xl font-bold text-white tracking-tight">
+            Good Morning, {owner} <span className="inline-block animate-pulse">👋</span>
+          </h1>
+          <p className="text-white/85 mt-2 text-[15px]">Here is your AI Chief of Staff briefing.</p>
         </div>
-        <h1 className="text-3xl font-semibold text-zinc-100 tracking-tight">
-          Good Morning, {owner} <span className="inline-block">👋</span>
-        </h1>
-        <p className="text-zinc-400 mt-1.5 text-[15px]">Here is your AI Chief of Staff briefing.</p>
       </div>
 
       {/* Top row: Health + Priorities */}
@@ -435,13 +470,14 @@ function MemoryView({ company }) {
 
   return (
     <div className="animate-slide-in max-w-5xl">
-      <SectionTitle
-        eyebrow="Business Memory"
-        title="Ask anything about your business"
-        description="Sentinel indexes every invoice, order, customer, and message."
+      <GradientBanner
+        from="from-indigo-600" via="via-violet-600" to="to-fuchsia-600"
+        icon={Brain}
+        title="Business Memory"
+        subtitle="Ask anything — Sentinel has indexed every invoice, order, and message."
       />
 
-      <Card className="p-2 mb-4 relative">
+      <Card className="p-2 mb-4 relative" is3D={false}>
         <div className="flex items-center gap-3 px-3">
           <Search className="h-4 w-4 text-zinc-500 shrink-0" />
           <input
@@ -601,10 +637,11 @@ function DefaultSummary({ company }) {
 function KpiView({ company }) {
   return (
     <div className="animate-slide-in">
-      <SectionTitle
-        eyebrow="AI Dashboards"
-        title="Autonomous Business Intelligence"
-        description="Sentinel continuously monitors and surfaces every metric that matters."
+      <GradientBanner
+        from="from-emerald-600" via="via-teal-600" to="to-cyan-600"
+        icon={BarChart3}
+        title="AI Dashboards"
+        subtitle="Autonomous business intelligence — every metric that matters, live."
       />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <KpiCard icon={IndianRupee} label="Revenue (MoM)" value={formatCurrency(company.kpis.revenue)} delta={`+${company.kpis.revenueDelta}%`} positive accent="emerald" />
@@ -698,10 +735,11 @@ function ShadowView({ pushToast }) {
 
   return (
     <div className="animate-slide-in">
-      <SectionTitle
-        eyebrow="Shadow Employee"
-        title="Proactive Activity Timeline"
-        description="Your 24/7 AI operator flagged the following in real time."
+      <GradientBanner
+        from="from-rose-600" via="via-pink-600" to="to-orange-500"
+        icon={Ghost}
+        title="Shadow Employee"
+        subtitle="Your 24/7 AI operator — proactive alerts, drafted actions, real time."
       />
 
       <div className="relative pl-6">
@@ -749,10 +787,11 @@ function ShadowView({ pushToast }) {
 function SimulatorView({ priceIncrease, setPriceIncrease, supplyOpt, setSupplyOpt, company, baseline }) {
   return (
     <div className="animate-slide-in">
-      <SectionTitle
-        eyebrow="Decision Simulator"
-        title="Model strategic decisions in real time"
-        description="Toggle scenarios to see projected impact on health score, revenue, and risk."
+      <GradientBanner
+        from="from-violet-600" via="via-purple-600" to="to-indigo-600"
+        icon={FlaskConical}
+        title="Decision Simulator"
+        subtitle="Model strategic decisions in real time — see the impact before you commit."
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-8">
@@ -972,20 +1011,39 @@ function BusinessFooter() {
 }
 
 function SettingsView() {
+  const integrations = [
+    { name: 'QuickBooks', desc: 'Accounting sync · Last: 2 min ago', status: 'Connected', color: 'emerald', letter: 'Q' },
+    { name: 'Shopify', desc: 'Order + inventory feed', status: 'Connected', color: 'emerald', letter: 'S' },
+    { name: 'Gmail', desc: 'Outreach + threads', status: 'Connected', color: 'rose', letter: 'G' },
+    { name: 'Slack', desc: 'Alert routing', status: 'Not linked', color: 'indigo', letter: '#' },
+    { name: 'WhatsApp Business', desc: 'Customer messaging', status: 'Connected', color: 'emerald', letter: 'W' },
+    { name: 'Razorpay', desc: 'Payment gateway (India)', status: 'Connected', color: 'blue', letter: 'R' },
+  ]
+  const colors = {
+    emerald: 'from-emerald-500 to-teal-500',
+    rose: 'from-rose-500 to-orange-500',
+    indigo: 'from-indigo-500 to-violet-500',
+    blue: 'from-blue-500 to-cyan-500',
+  }
   return (
-    <div className="animate-slide-in max-w-3xl">
-      <SectionTitle eyebrow="Settings" title="Configuration" description="Manage integrations and preferences." />
-      <div className="space-y-4">
-        {[
-          { name: 'QuickBooks', desc: 'Accounting sync · Last: 2 min ago', status: 'Connected' },
-          { name: 'Shopify', desc: 'Order + inventory feed', status: 'Connected' },
-          { name: 'Gmail', desc: 'Outreach + threads', status: 'Connected' },
-          { name: 'Slack', desc: 'Alert routing', status: 'Not linked' },
-        ].map((i) => (
-          <Card key={i.name} className="p-5 flex items-center justify-between">
-            <div>
-              <div className="text-sm font-semibold text-zinc-100">{i.name}</div>
-              <div className="text-xs text-zinc-500 mt-0.5">{i.desc}</div>
+    <div className="animate-slide-in max-w-4xl">
+      <GradientBanner
+        from="from-zinc-700" via="via-slate-600" to="to-zinc-800"
+        icon={Settings}
+        title="Settings & Integrations"
+        subtitle="Manage your connected systems, preferences, and workspace."
+      />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {integrations.map((i) => (
+          <Card key={i.name} className="p-5 flex items-center justify-between group cursor-pointer">
+            <div className="flex items-center gap-3">
+              <div className={`h-11 w-11 rounded-xl bg-gradient-to-br ${colors[i.color]} flex items-center justify-center text-white font-bold text-lg shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all`}>
+                {i.letter}
+              </div>
+              <div>
+                <div className="text-sm font-semibold text-zinc-100">{i.name}</div>
+                <div className="text-xs text-zinc-500 mt-0.5">{i.desc}</div>
+              </div>
             </div>
             <span className={`text-[11px] px-2.5 py-1 rounded-md font-medium border ${
               i.status === 'Connected'
@@ -1004,6 +1062,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('dashboard')
   const [priceIncrease, setPriceIncrease] = useState(false)
   const [supplyOpt, setSupplyOpt] = useState(false)
+  const [theme, setTheme] = useState('dark')
   const { toasts, push } = useToasts()
 
   // Derive live company state from toggles
@@ -1045,10 +1104,10 @@ function App() {
   }
 
   return (
-    <div className="h-screen w-screen flex bg-zinc-950 text-zinc-100 overflow-hidden">
+    <div className={`h-screen w-screen flex bg-zinc-950 text-zinc-100 overflow-hidden ${theme === 'light' ? 'light-mode' : ''}`}>
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
       <div className="flex-1 flex flex-col min-w-0">
-        <Header company={company} />
+        <Header company={company} theme={theme} setTheme={setTheme} />
         <main className="flex-1 overflow-y-auto grid-backdrop">
           <div className="max-w-[1400px] mx-auto px-8 py-8">
             {renderTab()}
