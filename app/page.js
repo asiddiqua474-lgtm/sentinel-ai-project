@@ -155,8 +155,7 @@ function Sidebar({ activeTab, setActiveTab }) {
 }
 
 // ---------------- Header ----------------
-function Header({ company, theme, setTheme, onOpenAsk }) {
-  const [notifOpen, setNotifOpen] = useState(false)
+function Header({ company, theme, setTheme, onOpenAsk, notifOpen, setNotifOpen, pushToast }) {
   return (
     <header className="h-16 shrink-0 border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur px-6 flex items-center justify-between">
       <div className="flex items-center gap-3">
@@ -199,12 +198,11 @@ function Header({ company, theme, setTheme, onOpenAsk }) {
         <div className="relative">
           <button
             onClick={() => setNotifOpen(!notifOpen)}
-            className="relative h-9 w-9 rounded-md border border-zinc-800 bg-zinc-900/50 flex items-center justify-center hover:bg-zinc-900 transition"
+            className="relative h-9 w-9 rounded-md border border-zinc-800 bg-zinc-900/50 flex items-center justify-center hover:bg-zinc-900 hover:border-indigo-500/40 transition z-[80]"
           >
             <Bell className="h-4 w-4 text-zinc-400" />
-            <span className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-rose-500" />
+            <span className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-rose-500 pulse-dot" />
           </button>
-          <NotificationsPopover open={notifOpen} onClose={() => setNotifOpen(false)} />
         </div>
         <div className="flex items-center gap-2.5 pl-3 border-l border-zinc-800">
           <div className="text-right hidden sm:block">
@@ -1525,37 +1523,96 @@ function Sparkline({ points, color = '#6366f1', height = 32, width = 90 }) {
 }
 
 // ---------------- Notifications Popover ----------------
-function NotificationsPopover({ open, onClose }) {
-  if (!open) return null
-  const items = [
-    { title: 'USB-C Hub critical stock', time: '2m', color: 'rose' },
-    { title: 'Acme Corp reminder drafted', time: '18m', color: 'amber' },
-    { title: 'Nova Retail churn risk detected', time: '1h', color: 'indigo' },
-    { title: '₹4,200 flagged as recoverable', time: '3h', color: 'emerald' },
-  ]
+function NotificationsPopover({ open, onClose, pushToast }) {
+  const [items, setItems] = useState([
+    { id: 'n1', title: 'USB-C Hub critical stock', body: 'Only 2 units left in inventory.', time: '2m', color: 'rose', icon: Package, read: false },
+    { id: 'n2', title: 'Acme Corp reminder drafted', body: 'AI has prepared a follow-up email.', time: '18m', color: 'amber', icon: Mail, read: false },
+    { id: 'n3', title: 'Nova Retail churn risk detected', body: '24 days since last order — outreach recommended.', time: '1h', color: 'indigo', icon: Users, read: false },
+    { id: 'n4', title: '₹4,200 flagged as recoverable', body: 'Automated dunning sequence ready.', time: '3h', color: 'emerald', icon: IndianRupee, read: false },
+  ])
+  if (!open) return (
+    <div className="hidden">{items.length}</div>
+  )
+  const colorMap = {
+    rose: { bg: 'bg-rose-500/10 border-rose-500/20', text: 'text-rose-400', dot: 'bg-rose-500' },
+    amber: { bg: 'bg-amber-500/10 border-amber-500/20', text: 'text-amber-400', dot: 'bg-amber-500' },
+    indigo: { bg: 'bg-indigo-500/10 border-indigo-500/20', text: 'text-indigo-400', dot: 'bg-indigo-500' },
+    emerald: { bg: 'bg-emerald-500/10 border-emerald-500/20', text: 'text-emerald-400', dot: 'bg-emerald-500' },
+  }
+  const unread = items.filter(i => !i.read).length
+  const markRead = (id) => setItems(list => list.map(i => i.id === id ? { ...i, read: true } : i))
+  const markAllRead = () => setItems(list => list.map(i => ({ ...i, read: true })))
+  const dismiss = (id, title) => {
+    setItems(list => list.filter(i => i.id !== id))
+    pushToast?.(`✓ Dismissed: ${title}`)
+  }
   return (
     <>
-      <div className="fixed inset-0 z-40" onClick={onClose} />
-      <div className="absolute right-0 top-11 z-50 w-80 rounded-xl border border-zinc-800 bg-zinc-900 shadow-2xl overflow-hidden animate-slide-in">
-        <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between bg-gradient-to-r from-indigo-500/10 to-violet-500/10">
-          <div className="text-sm font-semibold text-zinc-100">Notifications</div>
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-500/10 border border-rose-500/30 text-rose-400 font-medium">4 new</span>
-        </div>
-        <div className="max-h-72 overflow-y-auto">
-          {items.map((n, i) => (
-            <div key={i} className="px-4 py-3 border-b border-zinc-800/60 last:border-0 hover:bg-zinc-800/40 transition cursor-pointer flex items-start gap-3">
-              <div className={`h-2 w-2 rounded-full mt-1.5 shrink-0 ${
-                n.color === 'rose' ? 'bg-rose-500' : n.color === 'amber' ? 'bg-amber-500' : n.color === 'indigo' ? 'bg-indigo-500' : 'bg-emerald-500'
-              } pulse-dot`} />
-              <div className="flex-1 min-w-0">
-                <div className="text-xs text-zinc-200">{n.title}</div>
-                <div className="text-[10px] text-zinc-500 mt-0.5">{n.time} ago</div>
-              </div>
+      <div className="fixed inset-0 z-[60]" onClick={onClose} />
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="fixed right-6 top-16 z-[70] w-96 rounded-2xl border border-zinc-700 bg-zinc-900 shadow-2xl overflow-hidden animate-slide-in card-3d"
+      >
+        <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between bg-gradient-to-r from-indigo-500/20 via-violet-500/20 to-fuchsia-500/20">
+          <div className="flex items-center gap-2">
+            <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center">
+              <Bell className="h-3.5 w-3.5 text-white" />
             </div>
-          ))}
+            <div className="text-sm font-semibold text-zinc-100">Notifications</div>
+            {unread > 0 && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-rose-500 text-white font-bold">{unread}</span>
+            )}
+          </div>
+          <button onClick={markAllRead} className="text-[11px] text-indigo-400 hover:text-indigo-300 font-medium transition">
+            Mark all read
+          </button>
         </div>
-        <div className="px-4 py-2 border-t border-zinc-800 text-center">
-          <button className="text-xs text-indigo-400 hover:text-indigo-300">View all activity →</button>
+        <div className="max-h-96 overflow-y-auto">
+          {items.length === 0 ? (
+            <div className="px-4 py-10 text-center">
+              <CheckCircle2 className="h-10 w-10 text-emerald-400 mx-auto mb-2" />
+              <div className="text-sm text-zinc-200 font-medium">All caught up!</div>
+              <div className="text-xs text-zinc-500 mt-1">No new notifications.</div>
+            </div>
+          ) : (
+            items.map((n) => {
+              const c = colorMap[n.color]
+              const Icon = n.icon
+              return (
+                <div
+                  key={n.id}
+                  className={`group px-4 py-3 border-b border-zinc-800/60 last:border-0 transition cursor-pointer flex items-start gap-3 ${n.read ? 'bg-zinc-900/40 opacity-70' : 'hover:bg-zinc-800/40'}`}
+                  onClick={() => markRead(n.id)}
+                >
+                  <div className={`h-9 w-9 rounded-lg border flex items-center justify-center shrink-0 ${c.bg}`}>
+                    <Icon className={`h-4 w-4 ${c.text}`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="text-sm text-zinc-100 font-medium leading-snug">{n.title}</div>
+                      {!n.read && <span className={`mt-1.5 h-1.5 w-1.5 rounded-full shrink-0 ${c.dot} pulse-dot`} />}
+                    </div>
+                    <div className="text-xs text-zinc-500 mt-0.5 leading-snug">{n.body}</div>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-[10px] text-zinc-500">{n.time} ago</span>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); dismiss(n.id, n.title) }}
+                        className="text-[10px] text-zinc-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )
+            })
+          )}
+        </div>
+        <div className="px-4 py-2 border-t border-zinc-800 bg-zinc-900/60 flex items-center justify-between">
+          <span className="text-[10px] text-zinc-500 flex items-center gap-1">
+            <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 pulse-dot" /> Live · updated 4s ago
+          </span>
+          <button className="text-[11px] text-indigo-400 hover:text-indigo-300 font-medium transition">View all →</button>
         </div>
       </div>
     </>
@@ -1597,6 +1654,7 @@ function App() {
   const [supplyOpt, setSupplyOpt] = useState(false)
   const [theme, setTheme] = useState('dark')
   const [askOpen, setAskOpen] = useState(false)
+  const [notifOpen, setNotifOpen] = useState(false)
   const { toasts, push } = useToasts()
 
   useEffect(() => {
@@ -1653,7 +1711,7 @@ function App() {
     <div className={`h-screen w-screen flex bg-zinc-950 text-zinc-100 overflow-hidden ${theme === 'light' ? 'light-mode' : ''}`}>
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
       <div className="flex-1 flex flex-col min-w-0">
-        <Header company={company} theme={theme} setTheme={setTheme} onOpenAsk={() => setAskOpen(true)} />
+        <Header company={company} theme={theme} setTheme={setTheme} onOpenAsk={() => setAskOpen(true)} notifOpen={notifOpen} setNotifOpen={setNotifOpen} pushToast={push} />
         <main className="flex-1 overflow-y-auto grid-backdrop">
           <div className="max-w-[1400px] mx-auto px-8 py-8">
             {renderTab()}
@@ -1663,6 +1721,7 @@ function App() {
       </div>
       <ToastStack toasts={toasts} />
       <AskSentinel open={askOpen} onClose={() => setAskOpen(false)} />
+      <NotificationsPopover open={notifOpen} onClose={() => setNotifOpen(false)} pushToast={push} />
     </div>
   )
 }
