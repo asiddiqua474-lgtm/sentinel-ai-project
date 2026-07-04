@@ -1064,6 +1064,12 @@ function BusinessFooter() {
 }
 
 function SettingsView() {
+  const [notif, setNotif] = useState(true)
+  const [emailDigest, setEmailDigest] = useState(true)
+  const [sound, setSound] = useState(false)
+  const [autopilot, setAutopilot] = useState(true)
+  const [twoFA, setTwoFA] = useState(true)
+
   const integrations = [
     { name: 'QuickBooks', desc: 'Accounting sync · Last: 2 min ago', status: 'Connected', color: 'emerald', letter: 'Q' },
     { name: 'Shopify', desc: 'Order + inventory feed', status: 'Connected', color: 'emerald', letter: 'S' },
@@ -1071,40 +1077,274 @@ function SettingsView() {
     { name: 'Slack', desc: 'Alert routing', status: 'Not linked', color: 'indigo', letter: '#' },
     { name: 'WhatsApp Business', desc: 'Customer messaging', status: 'Connected', color: 'emerald', letter: 'W' },
     { name: 'Razorpay', desc: 'Payment gateway (India)', status: 'Connected', color: 'blue', letter: 'R' },
+    { name: 'Tally', desc: 'ERP sync', status: 'Not linked', color: 'amber', letter: 'T' },
+    { name: 'Zoho CRM', desc: 'Customer records', status: 'Connected', color: 'rose', letter: 'Z' },
   ]
-  const colors = {
+  const logoColors = {
     emerald: 'from-emerald-500 to-teal-500',
     rose: 'from-rose-500 to-orange-500',
     indigo: 'from-indigo-500 to-violet-500',
     blue: 'from-blue-500 to-cyan-500',
+    amber: 'from-amber-500 to-orange-500',
   }
+
+  const team = [
+    { name: 'Zaara Chen', role: 'Owner · Admin', email: 'zaara@apex.co', color: 'from-indigo-500 via-violet-500 to-fuchsia-500', initial: 'Z' },
+    { name: 'Rahul Verma', role: 'Operations Manager', email: 'rahul@apex.co', color: 'from-emerald-500 to-teal-500', initial: 'R' },
+    { name: 'Priya Nair', role: 'Finance Lead', email: 'priya@apex.co', color: 'from-rose-500 to-pink-500', initial: 'P' },
+    { name: 'Arjun Iyer', role: 'Sales Rep · Read-only', email: 'arjun@apex.co', color: 'from-amber-500 to-orange-500', initial: 'A' },
+  ]
+
   return (
-    <div className="animate-slide-in max-w-4xl">
+    <div className="animate-slide-in max-w-6xl space-y-6">
       <GradientBanner
-        from="from-zinc-700" via="via-slate-600" to="to-zinc-800"
+        from="from-slate-700" via="via-zinc-700" to="to-slate-800"
         icon={Settings}
-        title="Settings & Integrations"
-        subtitle="Manage your connected systems, preferences, and workspace."
+        title="Settings & Workspace"
+        subtitle="Manage your profile, integrations, team, plan, and security in one place."
       />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {integrations.map((i) => (
-          <Card key={i.name} className="p-5 flex items-center justify-between group cursor-pointer">
-            <div className="flex items-center gap-3">
-              <div className={`h-11 w-11 rounded-xl bg-gradient-to-br ${colors[i.color]} flex items-center justify-center text-white font-bold text-lg shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all`}>
-                {i.letter}
-              </div>
-              <div>
-                <div className="text-sm font-semibold text-zinc-100">{i.name}</div>
-                <div className="text-xs text-zinc-500 mt-0.5">{i.desc}</div>
+
+      {/* Profile Hero */}
+      <Card className="relative overflow-hidden p-0">
+        <div className="h-28 bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500 animate-gradient relative">
+          <div className="absolute inset-0 grid-backdrop opacity-30" />
+        </div>
+        <div className="px-6 pb-6 -mt-12 relative">
+          <div className="flex items-end justify-between">
+            <div className="flex items-end gap-4">
+              <div className="h-24 w-24 rounded-2xl bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500 flex items-center justify-center text-4xl font-bold text-white ring-4 ring-zinc-950 shadow-2xl">Z</div>
+              <div className="pb-2">
+                <div className="text-xl font-bold text-zinc-100">Zaara Chen</div>
+                <div className="text-sm text-zinc-400">Owner · Apex Electronics LLC</div>
+                <div className="flex items-center gap-2 mt-1.5">
+                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-medium flex items-center gap-1"><CheckCircle2 className="h-3 w-3"/> Verified</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 font-medium flex items-center gap-1"><Star className="h-3 w-3"/> Pro Plan</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-400 font-medium">Early Adopter</span>
+                </div>
               </div>
             </div>
-            <span className={`text-[11px] px-2.5 py-1 rounded-md font-medium border ${
-              i.status === 'Connected'
-                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                : 'bg-zinc-800 text-zinc-500 border-zinc-700'
-            }`}>{i.status}</span>
+            <button className="px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-400 hover:to-violet-500 text-white text-sm font-medium shadow-lg shadow-indigo-500/30 hover:scale-105 transition-all">Edit Profile</button>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
+            {[
+              { label: 'Member Since', value: 'Jan 2024', icon: Calendar, color: 'text-indigo-400' },
+              { label: 'AI Actions', value: '2,847', icon: Sparkles, color: 'text-fuchsia-400' },
+              { label: 'Hours Saved', value: '412h', icon: Clock, color: 'text-emerald-400' },
+              { label: 'ROI Delivered', value: '₹4.2L', icon: TrendingUp, color: 'text-amber-400' },
+            ].map((s) => {
+              const Icon = s.icon
+              return (
+                <div key={s.label} className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Icon className={`h-3.5 w-3.5 ${s.color}`} />
+                    <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium">{s.label}</div>
+                  </div>
+                  <div className="text-lg font-bold text-zinc-100 tabular-nums">{s.value}</div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </Card>
+
+      {/* Plan & Billing */}
+      <Card className="p-0 overflow-hidden">
+        <div className="relative p-6 bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-600 animate-gradient">
+          <div className="absolute -top-16 -right-10 h-56 w-56 rounded-full bg-white/10 blur-3xl" />
+          <div className="absolute -bottom-10 left-1/3 h-40 w-40 rounded-full bg-amber-400/20 blur-3xl" />
+          <div className="relative flex items-start justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-8 w-8 rounded-lg bg-white/20 backdrop-blur border border-white/30 flex items-center justify-center">
+                  <Award className="h-4 w-4 text-white" />
+                </div>
+                <span className="text-[10px] uppercase tracking-widest text-white/80 font-semibold">Current Plan</span>
+              </div>
+              <div className="text-3xl font-bold text-white tracking-tight">Sentinel Pro</div>
+              <div className="text-sm text-white/85 mt-1">₹2,499 / month · billed monthly · renews Aug 15, 2025</div>
+              <div className="flex items-center gap-2 mt-3 flex-wrap">
+                {['Unlimited AI queries', 'All integrations', '5 team seats', 'Priority support'].map((f) => (
+                  <span key={f} className="text-[11px] px-2 py-1 rounded-md bg-white/15 backdrop-blur border border-white/20 text-white flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3" /> {f}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="flex flex-col gap-2 shrink-0">
+              <button className="px-4 py-2 rounded-lg bg-white text-indigo-600 hover:bg-zinc-100 text-sm font-semibold shadow-lg hover:scale-105 transition-all flex items-center gap-1.5">
+                <Rocket className="h-4 w-4" /> Upgrade to Enterprise
+              </button>
+              <button className="px-4 py-2 rounded-lg bg-white/10 backdrop-blur border border-white/20 text-white hover:bg-white/20 text-sm font-medium transition">Manage Billing</button>
+            </div>
+          </div>
+        </div>
+        <div className="px-6 py-4 border-t border-zinc-800 grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[
+            { label: 'AI Queries', used: 2847, limit: 'Unlimited', pct: 40, color: 'bg-indigo-500' },
+            { label: 'Team Seats', used: 4, limit: 5, pct: 80, color: 'bg-emerald-500' },
+            { label: 'Storage', used: '12.4 GB', limit: '50 GB', pct: 25, color: 'bg-fuchsia-500' },
+          ].map((u) => (
+            <div key={u.label}>
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="text-xs text-zinc-400">{u.label}</div>
+                <div className="text-[11px] text-zinc-500 tabular-nums">{u.used} / {u.limit}</div>
+              </div>
+              <div className="h-1.5 rounded-full bg-zinc-800 overflow-hidden">
+                <div className={`h-full ${u.color} transition-all`} style={{ width: `${u.pct}%` }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* Preferences */}
+      <div>
+        <SectionTitle eyebrow="Preferences" title="How Sentinel behaves" description="Fine-tune notifications, automation, and behavior." />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {[
+            { title: 'Push Notifications', desc: 'Real-time alerts for critical events', icon: Bell, color: 'rose', state: notif, setter: setNotif },
+            { title: 'Daily Email Digest', desc: '8am briefing with priorities + insights', icon: Mail, color: 'indigo', state: emailDigest, setter: setEmailDigest },
+            { title: 'Sound Alerts', desc: 'Audible cue for critical notifications', icon: Zap, color: 'amber', state: sound, setter: setSound },
+            { title: 'AI Autopilot Mode', desc: 'Let Sentinel draft & queue actions', icon: Sparkles, color: 'violet', state: autopilot, setter: setAutopilot },
+          ].map((p) => {
+            const Icon = p.icon
+            const colorMap = {
+              rose: 'bg-rose-500/10 border-rose-500/20 text-rose-400',
+              indigo: 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400',
+              amber: 'bg-amber-500/10 border-amber-500/20 text-amber-400',
+              violet: 'bg-violet-500/10 border-violet-500/20 text-violet-400',
+            }
+            return (
+              <Card key={p.title} className="p-4 flex items-center gap-3">
+                <div className={`h-10 w-10 rounded-lg border flex items-center justify-center ${colorMap[p.color]}`}>
+                  <Icon className="h-4 w-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold text-zinc-100">{p.title}</div>
+                  <div className="text-xs text-zinc-500 mt-0.5">{p.desc}</div>
+                </div>
+                <Switch active={p.state} onClick={() => p.setter(!p.state)} />
+              </Card>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Integrations */}
+      <div>
+        <SectionTitle eyebrow="Integrations" title="Connected Systems" description="8 integrations · 6 active" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {integrations.map((i) => (
+            <Card key={i.name} className="p-4 flex items-center justify-between group cursor-pointer">
+              <div className="flex items-center gap-3">
+                <div className={`h-11 w-11 rounded-xl bg-gradient-to-br ${logoColors[i.color]} flex items-center justify-center text-white font-bold text-lg shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all`}>
+                  {i.letter}
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-zinc-100">{i.name}</div>
+                  <div className="text-xs text-zinc-500 mt-0.5">{i.desc}</div>
+                </div>
+              </div>
+              <span className={`text-[11px] px-2.5 py-1 rounded-md font-medium border ${
+                i.status === 'Connected'
+                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                  : 'bg-zinc-800 text-zinc-500 border-zinc-700'
+              }`}>{i.status}</span>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      {/* Team */}
+      <div>
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <div className="text-[11px] uppercase tracking-widest text-indigo-400 font-medium mb-1.5">Team & Access</div>
+            <h2 className="text-xl font-semibold text-zinc-100 tracking-tight">Team members</h2>
+            <p className="text-sm text-zinc-500 mt-1">4 of 5 seats used</p>
+          </div>
+          <button className="px-3 py-2 rounded-lg bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/20 text-sm font-medium flex items-center gap-1.5 transition">
+            <Users className="h-4 w-4" /> Invite Member
+          </button>
+        </div>
+        <Card className="overflow-hidden p-0">
+          {team.map((m, idx) => (
+            <div key={m.email} className={`px-5 py-3 flex items-center justify-between hover:bg-zinc-900/40 transition ${idx < team.length - 1 ? 'border-b border-zinc-800/70' : ''}`}>
+              <div className="flex items-center gap-3">
+                <div className={`h-10 w-10 rounded-full bg-gradient-to-br ${m.color} flex items-center justify-center text-sm font-bold text-white shadow-lg ring-2 ring-zinc-950`}>{m.initial}</div>
+                <div>
+                  <div className="text-sm font-semibold text-zinc-100">{m.name}</div>
+                  <div className="text-xs text-zinc-500">{m.email}</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-zinc-400 hidden sm:block">{m.role}</span>
+                <button className="text-[11px] px-2 py-1 rounded border border-zinc-800 text-zinc-500 hover:text-zinc-200 hover:border-zinc-700 transition">Manage</button>
+              </div>
+            </div>
+          ))}
+        </Card>
+      </div>
+
+      {/* Security */}
+      <div>
+        <SectionTitle eyebrow="Security" title="Account protection" description="Keep your workspace safe." />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <Card className="p-4 flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+              <Shield className="h-4 w-4 text-emerald-400" />
+            </div>
+            <div className="flex-1">
+              <div className="text-sm font-semibold text-zinc-100">Two-Factor Authentication</div>
+              <div className="text-xs text-zinc-500 mt-0.5">SMS + Authenticator App enabled</div>
+            </div>
+            <Switch active={twoFA} onClick={() => setTwoFA(!twoFA)} />
           </Card>
-        ))}
+          <Card className="p-4 flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
+              <Command className="h-4 w-4 text-indigo-400" />
+            </div>
+            <div className="flex-1">
+              <div className="text-sm font-semibold text-zinc-100">Active Sessions</div>
+              <div className="text-xs text-zinc-500 mt-0.5">2 devices signed in</div>
+            </div>
+            <button className="text-[11px] px-2 py-1 rounded border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700 transition">Review</button>
+          </Card>
+          <Card className="p-4 flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+              <Zap className="h-4 w-4 text-amber-400" />
+            </div>
+            <div className="flex-1">
+              <div className="text-sm font-semibold text-zinc-100">API Keys & Webhooks</div>
+              <div className="text-xs text-zinc-500 mt-0.5 font-mono truncate">sk_live_••••••••••••3f2a</div>
+            </div>
+            <button className="text-[11px] px-2 py-1 rounded border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700 transition">Rotate</button>
+          </Card>
+          <Card className="p-4 flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
+              <Activity className="h-4 w-4 text-violet-400" />
+            </div>
+            <div className="flex-1">
+              <div className="text-sm font-semibold text-zinc-100">Audit Log</div>
+              <div className="text-xs text-zinc-500 mt-0.5">Last event: 4 min ago</div>
+            </div>
+            <button className="text-[11px] px-2 py-1 rounded border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700 transition">View</button>
+          </Card>
+        </div>
+      </div>
+
+      {/* Danger Zone */}
+      <div>
+        <div className="text-[11px] uppercase tracking-widest text-rose-400 font-medium mb-3">Danger Zone</div>
+        <Card className="p-5 border-rose-500/30 bg-rose-500/5">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <div className="text-sm font-semibold text-zinc-100">Delete workspace</div>
+              <div className="text-xs text-zinc-500 mt-0.5">Permanently delete Apex Electronics workspace and all data. This action cannot be undone.</div>
+            </div>
+            <button className="px-4 py-2 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500/20 text-sm font-medium transition shrink-0">Delete Workspace</button>
+          </div>
+        </Card>
       </div>
     </div>
   )
