@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   LayoutDashboard, Brain, BarChart3, Ghost, FlaskConical, Settings,
   TrendingUp, Users, AlertTriangle, IndianRupee, Search, Sparkles,
   ArrowUpRight, ArrowDownRight, CheckCircle2, XCircle, Clock,
   Package, Mail, ShoppingCart, Zap, Bell, ChevronRight, Send,
   Lightbulb, Target, Activity, Command, Phone, Facebook, Instagram,
-  Sun, Moon
+  Sun, Moon, Star, Award, Shield, Rocket, X as XClose, Calendar
 } from 'lucide-react'
 
 // Custom social icons (X, WhatsApp)
@@ -155,7 +155,8 @@ function Sidebar({ activeTab, setActiveTab }) {
 }
 
 // ---------------- Header ----------------
-function Header({ company, theme, setTheme }) {
+function Header({ company, theme, setTheme, onOpenAsk }) {
+  const [notifOpen, setNotifOpen] = useState(false)
   return (
     <header className="h-16 shrink-0 border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur px-6 flex items-center justify-between">
       <div className="flex items-center gap-3">
@@ -171,10 +172,19 @@ function Header({ company, theme, setTheme }) {
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-md border border-zinc-800 bg-zinc-900/50 text-xs text-zinc-400">
-          <Command className="h-3.5 w-3.5" /> <span>K</span>
-          <span className="text-zinc-600 ml-1">Ask Sentinel</span>
-        </div>
+        <button
+          onClick={onOpenAsk}
+          className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-md border border-zinc-800 bg-zinc-900/50 text-xs text-zinc-400 hover:border-indigo-500/50 hover:bg-indigo-500/5 hover:text-zinc-200 transition-all group"
+        >
+          <Sparkles className="h-3.5 w-3.5 text-indigo-400 group-hover:animate-pulse" />
+          <span className="text-zinc-500 mr-2">Ask Sentinel</span>
+          <kbd className="px-1 py-0 rounded bg-zinc-800 border border-zinc-700 text-[10px] text-zinc-400">⌘K</kbd>
+        </button>
+        <button
+          className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-400 hover:to-violet-500 text-white text-xs font-semibold shadow-lg shadow-indigo-500/30 hover:scale-105 transition-all"
+        >
+          <Calendar className="h-3.5 w-3.5" /> Book Demo
+        </button>
         <button
           onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
           title="Toggle theme"
@@ -186,10 +196,16 @@ function Header({ company, theme, setTheme }) {
             <Moon className="h-4 w-4 text-indigo-400 group-hover:-rotate-12 transition-transform duration-500" />
           )}
         </button>
-        <button className="relative h-9 w-9 rounded-md border border-zinc-800 bg-zinc-900/50 flex items-center justify-center hover:bg-zinc-900 transition">
-          <Bell className="h-4 w-4 text-zinc-400" />
-          <span className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-rose-500" />
-        </button>
+        <div className="relative">
+          <button
+            onClick={() => setNotifOpen(!notifOpen)}
+            className="relative h-9 w-9 rounded-md border border-zinc-800 bg-zinc-900/50 flex items-center justify-center hover:bg-zinc-900 transition"
+          >
+            <Bell className="h-4 w-4 text-zinc-400" />
+            <span className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-rose-500" />
+          </button>
+          <NotificationsPopover open={notifOpen} onClose={() => setNotifOpen(false)} />
+        </div>
         <div className="flex items-center gap-2.5 pl-3 border-l border-zinc-800">
           <div className="text-right hidden sm:block">
             <div className="text-xs font-medium text-zinc-200 leading-tight">Zaara Chen</div>
@@ -311,6 +327,9 @@ function DashboardView({ company }) {
         </div>
       </div>
 
+      {/* Trust Bar */}
+      <TrustBar />
+
       {/* Top row: Health + Priorities */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Health */}
@@ -403,6 +422,7 @@ function DashboardView({ company }) {
             delta={`+${kpis.revenueDelta}%`}
             positive
             accent="emerald"
+            spark={[110, 115, 108, 122, 128, 132, 138, 142]}
           />
           <KpiCard
             icon={Users}
@@ -411,6 +431,7 @@ function DashboardView({ company }) {
             delta="+8"
             positive
             accent="indigo"
+            spark={[310, 315, 320, 322, 328, 334, 338, 342]}
           />
           <KpiCard
             icon={Package}
@@ -419,6 +440,7 @@ function DashboardView({ company }) {
             delta="Attention"
             positive={false}
             accent="amber"
+            spark={[1, 1, 2, 2, 3, 3, 3, 3]}
           />
           <KpiCard
             icon={AlertTriangle}
@@ -427,6 +449,7 @@ function DashboardView({ company }) {
             delta="2 open"
             positive={false}
             accent="rose"
+            spark={[2000, 3200, 4500, 5800, 6200, 7400, 8100, 8400]}
           />
         </div>
       </div>
@@ -434,23 +457,27 @@ function DashboardView({ company }) {
   )
 }
 
-function KpiCard({ icon: Icon, label, value, delta, positive, accent = 'indigo' }) {
+function KpiCard({ icon: Icon, label, value, delta, positive, accent = 'indigo', spark }) {
   const accents = {
-    emerald: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 group-hover:bg-emerald-500/20 group-hover:shadow-lg group-hover:shadow-emerald-500/20',
-    indigo: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20 group-hover:bg-indigo-500/20 group-hover:shadow-lg group-hover:shadow-indigo-500/20',
-    amber: 'bg-amber-500/10 text-amber-400 border-amber-500/20 group-hover:bg-amber-500/20 group-hover:shadow-lg group-hover:shadow-amber-500/20',
-    rose: 'bg-rose-500/10 text-rose-400 border-rose-500/20 group-hover:bg-rose-500/20 group-hover:shadow-lg group-hover:shadow-rose-500/20',
+    emerald: { pill: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 group-hover:bg-emerald-500/20 group-hover:shadow-lg group-hover:shadow-emerald-500/20', color: '#10b981' },
+    indigo: { pill: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20 group-hover:bg-indigo-500/20 group-hover:shadow-lg group-hover:shadow-indigo-500/20', color: '#6366f1' },
+    amber: { pill: 'bg-amber-500/10 text-amber-400 border-amber-500/20 group-hover:bg-amber-500/20 group-hover:shadow-lg group-hover:shadow-amber-500/20', color: '#f59e0b' },
+    rose: { pill: 'bg-rose-500/10 text-rose-400 border-rose-500/20 group-hover:bg-rose-500/20 group-hover:shadow-lg group-hover:shadow-rose-500/20', color: '#f43f5e' },
   }
+  const a = accents[accent]
   return (
     <Card className="p-5 group cursor-pointer">
       <div className="flex items-center justify-between mb-4">
-        <div className={`h-9 w-9 rounded-lg border flex items-center justify-center transition-all duration-300 ${accents[accent]}`}>
+        <div className={`h-9 w-9 rounded-lg border flex items-center justify-center transition-all duration-300 ${a.pill}`}>
           <Icon className="h-4 w-4" />
         </div>
         <StatPill delta={delta} positive={positive} />
       </div>
       <div className="text-2xl font-semibold text-zinc-100 tracking-tight tabular-nums group-hover:text-white transition-colors">{value}</div>
-      <div className="text-xs text-zinc-500 mt-1 group-hover:text-zinc-400 transition-colors">{label}</div>
+      <div className="flex items-end justify-between mt-1">
+        <div className="text-xs text-zinc-500 group-hover:text-zinc-400 transition-colors">{label}</div>
+        {spark && <Sparkline points={spark} color={a.color} />}
+      </div>
     </Card>
   )
 }
@@ -644,10 +671,10 @@ function KpiView({ company }) {
         subtitle="Autonomous business intelligence — every metric that matters, live."
       />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <KpiCard icon={IndianRupee} label="Revenue (MoM)" value={formatCurrency(company.kpis.revenue)} delta={`+${company.kpis.revenueDelta}%`} positive accent="emerald" />
-        <KpiCard icon={Users} label="Active Customers" value={company.kpis.activeCustomers.toLocaleString()} delta="+8" positive accent="indigo" />
-        <KpiCard icon={Package} label="Low Stock Alerts" value={company.kpis.lowStockAlerts} delta="Attention" positive={false} accent="amber" />
-        <KpiCard icon={AlertTriangle} label="Overdue Invoices" value={formatCurrency(company.kpis.overdueTotal)} delta="2 open" positive={false} accent="rose" />
+        <KpiCard icon={IndianRupee} label="Revenue (MoM)" value={formatCurrency(company.kpis.revenue)} delta={`+${company.kpis.revenueDelta}%`} positive accent="emerald" spark={[110, 115, 108, 122, 128, 132, 138, 142]} />
+        <KpiCard icon={Users} label="Active Customers" value={company.kpis.activeCustomers.toLocaleString()} delta="+8" positive accent="indigo" spark={[310, 315, 320, 322, 328, 334, 338, 342]} />
+        <KpiCard icon={Package} label="Low Stock Alerts" value={company.kpis.lowStockAlerts} delta="Attention" positive={false} accent="amber" spark={[1, 1, 2, 2, 3, 3, 3, 3]} />
+        <KpiCard icon={AlertTriangle} label="Overdue Invoices" value={formatCurrency(company.kpis.overdueTotal)} delta="2 open" positive={false} accent="rose" spark={[2000, 3200, 4500, 5800, 6200, 7400, 8100, 8400]} />
       </div>
 
       <Card className="overflow-hidden">
@@ -976,6 +1003,32 @@ function BusinessFooter() {
                 <div className="text-sm font-semibold tabular-nums">+91 86880 46155</div>
               </div>
             </a>
+
+            {/* UPI Payment */}
+            <div className="rounded-xl border border-zinc-800/80 bg-gradient-to-br from-indigo-500/5 via-violet-500/5 to-fuchsia-500/5 p-3 mb-3 group hover:border-indigo-500/40 transition-all">
+              <div className="flex items-center gap-3">
+                <div className="h-16 w-16 rounded-lg bg-white p-1.5 shrink-0 shadow-lg group-hover:scale-105 transition-transform">
+                  <img
+                    src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi%3A%2F%2Fpay%3Fpa%3Dtabrez116%40ibl%26pn%3DSentinel%2520AI%26cu%3DINR&margin=0"
+                    alt="UPI QR Code — tabrez116@ibl"
+                    className="h-full w-full"
+                  />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[10px] text-indigo-400 uppercase tracking-wider font-semibold mb-1 flex items-center gap-1">
+                    <Zap className="h-3 w-3" /> Pay via UPI
+                  </div>
+                  <div className="text-xs text-zinc-300 font-mono truncate">tabrez116@ibl</div>
+                  <button
+                    onClick={() => { navigator.clipboard?.writeText('tabrez116@ibl') }}
+                    className="mt-1 text-[10px] px-2 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/20 transition"
+                  >
+                    Copy UPI ID
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <div className="flex items-center gap-2 mt-4">
               <a href="#" title="Facebook" className="h-9 w-9 rounded-lg border border-zinc-800 bg-zinc-900/60 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-blue-600 hover:border-blue-500 hover:scale-110 hover:-translate-y-0.5 transition-all">
                 <Facebook className="h-4 w-4" />
@@ -1057,13 +1110,266 @@ function SettingsView() {
   )
 }
 
+// ---------------- Ask Sentinel (Command Palette / AI Chat) ----------------
+function AskSentinel({ open, onClose }) {
+  const [q, setQ] = useState('')
+  const [messages, setMessages] = useState([])
+  const [typing, setTyping] = useState(false)
+
+  const smartAnswer = (query) => {
+    const l = query.toLowerCase()
+    if (/invoice|overdue|unpaid|receivable|payment/.test(l)) {
+      return `You have 2 unpaid invoices totalling ₹6,000.\n\n• Acme Corp — ₹4,200 (18 days overdue) — HIGH priority\n• Nova Retail — ₹1,800 (4 days overdue)\n\nI've drafted a soft-touch reminder for Acme Corp. Want me to send it?`
+    }
+    if (/stock|inventory|restock|supplier/.test(l)) {
+      return `Two SKUs need attention:\n\n• Titanium USB-C Hub — 2 units left (CRITICAL)\n• Quantum Pro Headset — 4 units (Low)\n\nRecommended: place an emergency PO for 200 USB-C Hubs (₹8,900) and a routine restock of 30 Headsets (₹26,910). Total: ₹35,810.`
+    }
+    if (/revenue|sales|growth|money/.test(l)) {
+      return `Revenue this month: ₹1,42,500 — up 12% MoM.\n\nInventory stockouts on the USB-C Hub are capping upside by ~₹11,000. Clear that constraint and next-month projection reaches ₹1,58,000+.`
+    }
+    if (/customer|churn|nova|acme|retention/.test(l)) {
+      return `You have 342 active customers.\n\nTwo need immediate attention:\n• Acme Corp — payment 18 days overdue\n• Nova Retail — churn risk (24 days since last order, historical cadence is 14 days)\n\nI can draft personalized outreach for both.`
+    }
+    if (/priorit|today|focus|agenda/.test(l)) {
+      return `Your top 3 priorities today:\n\n1. Remind Acme Corp about their overdue ₹4,200 balance\n2. Restock the Titanium USB-C Hub (critical)\n3. Re-engage Nova Retail before churn hardens`
+    }
+    if (/health|score|overall|summary/.test(l)) {
+      return `Business Health: 84/100 (+3 pts this week) — TRENDING UP.\n\n• Cash flow: strong\n• Revenue growth: +12% MoM\n• Main constraint: inventory stockouts on high-velocity SKUs\n• Risk: 1 aged receivable (Acme Corp)\n\nOverall — you're operating in a healthy growth regime.`
+    }
+    if (/simulat|forecast|scenario|what if/.test(l)) {
+      return `You can run scenarios in the Decision Simulator tab. Currently modelled:\n\n• 5% Price Increase → Health 88, Revenue ₹1,49,625 (+₹7,125)\n• Supply Chain Optimization → Lead time -22%, ~₹12,000 recovered from lost fulfillment\n\nCombined: additive impact with margin expansion + reduced fulfillment risk.`
+    }
+    if (/hello|hi|hey/.test(l)) {
+      return `Hello Zaara! I'm Sentinel — your AI Chief of Staff. I've been monitoring Apex Electronics 24/7. Ask me about invoices, inventory, revenue, customers, priorities, or run "what-if" scenarios.`
+    }
+    return `I've analyzed your business across every connected system. Try asking about:\n\n• Invoices & payments\n• Inventory & stockouts\n• Revenue & growth\n• Customers & churn\n• Today's priorities\n• Health score\n\nI can also draft emails, place orders, and simulate strategic decisions.`
+  }
+
+  const submit = () => {
+    if (!q.trim()) return
+    const query = q
+    setMessages((m) => [...m, { role: 'user', text: query }])
+    setQ('')
+    setTyping(true)
+    setTimeout(() => {
+      setMessages((m) => [...m, { role: 'ai', text: smartAnswer(query) }])
+      setTyping(false)
+    }, 650)
+  }
+
+  if (!open) return null
+
+  const suggestions = [
+    "What are today's priorities?",
+    'Show unpaid invoices',
+    'How is revenue trending?',
+    'Which customers might churn?',
+    'What if I raise prices 5%?',
+  ]
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 bg-black/70 backdrop-blur-sm animate-slide-in" onClick={onClose}>
+      <div onClick={(e) => e.stopPropagation()} className="w-full max-w-2xl mx-4 rounded-2xl border border-zinc-700 bg-zinc-900 shadow-2xl overflow-hidden card-3d">
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-zinc-800 bg-gradient-to-r from-indigo-500/10 via-violet-500/10 to-fuchsia-500/10">
+          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center glow-indigo">
+            <Sparkles className="h-5 w-5 text-white" />
+          </div>
+          <div className="flex-1">
+            <div className="text-sm font-semibold text-zinc-100 flex items-center gap-2">
+              Ask Sentinel
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-medium">AI · LIVE</span>
+            </div>
+            <div className="text-[11px] text-zinc-500">Your AI Chief of Staff · trained on your business</div>
+          </div>
+          <button onClick={onClose} className="h-8 w-8 rounded-md bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center text-zinc-400 hover:text-zinc-100 transition">
+            <XClose className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="max-h-[400px] overflow-y-auto p-5 space-y-3">
+          {messages.length === 0 && (
+            <div className="text-center py-4">
+              <div className="text-sm text-zinc-400 mb-4">Ask anything about Apex Electronics</div>
+              <div className="flex flex-wrap gap-2 justify-center">
+                {suggestions.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => { setQ(s); setTimeout(() => document.getElementById('ask-input')?.focus(), 0) }}
+                    className="text-xs px-3 py-1.5 rounded-full border border-zinc-800 bg-zinc-900/60 text-zinc-400 hover:text-indigo-300 hover:border-indigo-500/50 hover:bg-indigo-500/10 transition"
+                  >{s}</button>
+                ))}
+              </div>
+            </div>
+          )}
+          {messages.map((m, i) => (
+            <div key={i} className={`flex gap-3 ${m.role === 'user' ? 'justify-end' : ''}`}>
+              {m.role === 'ai' && (
+                <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shrink-0 glow-indigo">
+                  <Sparkles className="h-3.5 w-3.5 text-white" />
+                </div>
+              )}
+              <div className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm whitespace-pre-wrap leading-relaxed ${
+                m.role === 'user'
+                  ? 'bg-gradient-to-r from-indigo-500 to-violet-600 text-white'
+                  : 'bg-zinc-800/80 text-zinc-100 border border-zinc-700'
+              }`}>{m.text}</div>
+            </div>
+          ))}
+          {typing && (
+            <div className="flex gap-3">
+              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center glow-indigo">
+                <Sparkles className="h-3.5 w-3.5 text-white" />
+              </div>
+              <div className="bg-zinc-800/80 border border-zinc-700 px-4 py-3 rounded-2xl flex gap-1 items-center">
+                <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 animate-bounce" />
+                <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: '0.15s' }} />
+                <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: '0.3s' }} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="p-3 border-t border-zinc-800 bg-zinc-900/60">
+          <div className="flex items-center gap-2">
+            <input
+              id="ask-input"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') submit() }}
+              autoFocus
+              placeholder="Ask about invoices, inventory, revenue…"
+              className="flex-1 bg-zinc-800/60 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition"
+            />
+            <button
+              onClick={submit}
+              className="h-10 px-4 rounded-lg bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-400 hover:to-violet-500 text-white text-sm font-medium flex items-center gap-1.5 shadow-lg shadow-indigo-500/30 transition"
+            >
+              <Send className="h-3.5 w-3.5" /> Send
+            </button>
+          </div>
+          <div className="text-[10px] text-zinc-500 mt-2 flex items-center gap-3">
+            <span className="flex items-center gap-1"><kbd className="px-1 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-[9px]">Enter</kbd> to send</span>
+            <span className="flex items-center gap-1"><kbd className="px-1 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-[9px]">Esc</kbd> to close</span>
+            <span className="ml-auto text-emerald-400">● Connected</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ---------------- Sparkline ----------------
+function Sparkline({ points, color = '#6366f1', height = 32, width = 90 }) {
+  const min = Math.min(...points)
+  const max = Math.max(...points)
+  const range = max - min || 1
+  const step = width / (points.length - 1)
+  const coords = points.map((p, i) => [i * step, height - ((p - min) / range) * height])
+  const pathD = coords.map(([x, y], i) => `${i === 0 ? 'M' : 'L'} ${x} ${y}`).join(' ')
+  const areaD = `${pathD} L ${width} ${height} L 0 ${height} Z`
+  const last = coords[coords.length - 1]
+  return (
+    <svg width={width} height={height} className="overflow-visible">
+      <defs>
+        <linearGradient id={`spark-${color}`} x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.35" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={areaD} fill={`url(#spark-${color})`} />
+      <path d={pathD} stroke={color} strokeWidth="1.75" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={last[0]} cy={last[1]} r="3" fill={color} />
+      <circle cx={last[0]} cy={last[1]} r="6" fill={color} opacity="0.2" />
+    </svg>
+  )
+}
+
+// ---------------- Notifications Popover ----------------
+function NotificationsPopover({ open, onClose }) {
+  if (!open) return null
+  const items = [
+    { title: 'USB-C Hub critical stock', time: '2m', color: 'rose' },
+    { title: 'Acme Corp reminder drafted', time: '18m', color: 'amber' },
+    { title: 'Nova Retail churn risk detected', time: '1h', color: 'indigo' },
+    { title: '₹4,200 flagged as recoverable', time: '3h', color: 'emerald' },
+  ]
+  return (
+    <>
+      <div className="fixed inset-0 z-40" onClick={onClose} />
+      <div className="absolute right-0 top-11 z-50 w-80 rounded-xl border border-zinc-800 bg-zinc-900 shadow-2xl overflow-hidden animate-slide-in">
+        <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between bg-gradient-to-r from-indigo-500/10 to-violet-500/10">
+          <div className="text-sm font-semibold text-zinc-100">Notifications</div>
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-500/10 border border-rose-500/30 text-rose-400 font-medium">4 new</span>
+        </div>
+        <div className="max-h-72 overflow-y-auto">
+          {items.map((n, i) => (
+            <div key={i} className="px-4 py-3 border-b border-zinc-800/60 last:border-0 hover:bg-zinc-800/40 transition cursor-pointer flex items-start gap-3">
+              <div className={`h-2 w-2 rounded-full mt-1.5 shrink-0 ${
+                n.color === 'rose' ? 'bg-rose-500' : n.color === 'amber' ? 'bg-amber-500' : n.color === 'indigo' ? 'bg-indigo-500' : 'bg-emerald-500'
+              } pulse-dot`} />
+              <div className="flex-1 min-w-0">
+                <div className="text-xs text-zinc-200">{n.title}</div>
+                <div className="text-[10px] text-zinc-500 mt-0.5">{n.time} ago</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="px-4 py-2 border-t border-zinc-800 text-center">
+          <button className="text-xs text-indigo-400 hover:text-indigo-300">View all activity →</button>
+        </div>
+      </div>
+    </>
+  )
+}
+
+// ---------------- Trust Bar ----------------
+function TrustBar() {
+  const stats = [
+    { icon: Users, label: '2,400+ SMBs', sub: 'Trust Sentinel', color: 'text-indigo-400' },
+    { icon: Star, label: '4.9/5 rating', sub: 'From 800+ reviews', color: 'text-amber-400' },
+    { icon: Shield, label: 'ISO 27001', sub: 'Enterprise-grade security', color: 'text-emerald-400' },
+    { icon: Rocket, label: '20+ hrs/week', sub: 'Saved per business', color: 'text-rose-400' },
+  ]
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {stats.map((s, i) => {
+        const Icon = s.icon
+        return (
+          <Card key={i} className="p-4 flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-zinc-900/80 border border-zinc-800 flex items-center justify-center">
+              <Icon className={`h-5 w-5 ${s.color}`} />
+            </div>
+            <div>
+              <div className="text-sm font-semibold text-zinc-100">{s.label}</div>
+              <div className="text-[11px] text-zinc-500">{s.sub}</div>
+            </div>
+          </Card>
+        )
+      })}
+    </div>
+  )
+}
+
 // ---------------- Main App ----------------
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard')
   const [priceIncrease, setPriceIncrease] = useState(false)
   const [supplyOpt, setSupplyOpt] = useState(false)
   const [theme, setTheme] = useState('dark')
+  const [askOpen, setAskOpen] = useState(false)
   const { toasts, push } = useToasts()
+
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setAskOpen((v) => !v)
+      }
+      if (e.key === 'Escape') setAskOpen(false)
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
 
   // Derive live company state from toggles
   const company = useMemo(() => {
@@ -1107,7 +1413,7 @@ function App() {
     <div className={`h-screen w-screen flex bg-zinc-950 text-zinc-100 overflow-hidden ${theme === 'light' ? 'light-mode' : ''}`}>
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
       <div className="flex-1 flex flex-col min-w-0">
-        <Header company={company} theme={theme} setTheme={setTheme} />
+        <Header company={company} theme={theme} setTheme={setTheme} onOpenAsk={() => setAskOpen(true)} />
         <main className="flex-1 overflow-y-auto grid-backdrop">
           <div className="max-w-[1400px] mx-auto px-8 py-8">
             {renderTab()}
@@ -1116,6 +1422,7 @@ function App() {
         </main>
       </div>
       <ToastStack toasts={toasts} />
+      <AskSentinel open={askOpen} onClose={() => setAskOpen(false)} />
     </div>
   )
 }
