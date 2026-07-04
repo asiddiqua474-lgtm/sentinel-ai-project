@@ -19,7 +19,7 @@ if (!global._mongoClientPromise) {
 }
 const clientPromise = global._mongoClientPromise
 
-const DB_NAME = 'sentinel_rag'
+const DB_NAME = process.env.DB_NAME || 'sentinel_rag'
 const COLLECTION = 'memory_chunks'
 
 async function getCollection() {
