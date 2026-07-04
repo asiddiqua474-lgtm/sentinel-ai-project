@@ -7,7 +7,8 @@ import {
   ArrowUpRight, ArrowDownRight, CheckCircle2, XCircle, Clock,
   Package, Mail, ShoppingCart, Zap, Bell, ChevronRight, Send,
   Lightbulb, Target, Activity, Command, Phone, Facebook, Instagram,
-  Sun, Moon, Star, Award, Shield, Rocket, X as XClose, Calendar
+  Sun, Moon, Star, Award, Shield, Rocket, X as XClose, Calendar,
+  Upload, FileText, Trash2, Database, RefreshCw, Loader2
 } from 'lucide-react'
 
 // Custom social icons (X, WhatsApp)
@@ -480,60 +481,315 @@ function KpiCard({ icon: Icon, label, value, delta, positive, accent = 'indigo',
   )
 }
 
-// ---------------- Business Memory / AI Search ----------------
-function MemoryView({ company }) {
+// ---------------- Business Memory / AI Search View (RAG-powered) ----------------
+function MemoryView() {
+  const [messages, setMessages] = useState([])
   const [query, setQuery] = useState('')
+  const [asking, setAsking] = useState(false)
+
+  const [docs, setDocs] = useState([])
+  const [loadingList, setLoadingList] = useState(false)
+
+  const [ingestOpen, setIngestOpen] = useState(false)
+  const [ingestForm, setIngestForm] = useState({ doc_id: '', title: '', tags: '', text: '' })
+  const [ingesting, setIngesting] = useState(false)
+  const [lastIngest, setLastIngest] = useState(null)
+
   const suggestions = [
+    "What's the current balance for Acme Corp?",
     'Show unpaid invoices',
-    'Why did sales change?',
-    "What are today's priorities?",
+    'What is our refund policy?',
+    'Titanium USB-C Hub stock level',
+    'This week\'s ops decisions',
   ]
 
-  const lower = query.toLowerCase()
-  const showInvoices = /invoice|unpaid|overdue/.test(lower)
-  const showSales = /sales|priorit/.test(lower)
+  const fetchList = async () => {
+    setLoadingList(true)
+    try {
+      const r = await fetch('/api/memory/list')
+      const j = await r.json()
+      setDocs(j.documents || [])
+    } catch (e) { console.error(e) }
+    setLoadingList(false)
+  }
+  useEffect(() => { fetchList() }, [])
+
+  const seedDemo = async () => {
+    setLoadingList(true)
+    await fetch('/api/memory/seed', { method: 'POST' })
+    await fetchList()
+  }
+  const deleteDoc = async (doc_id) => {
+    await fetch('/api/memory/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ doc_id }) })
+    await fetchList()
+  }
+  const submitIngest = async () => {
+    if (!ingestForm.doc_id || !ingestForm.text) return
+    setIngesting(true)
+    try {
+      const tags = ingestForm.tags.split(',').map(t => t.trim()).filter(Boolean)
+      const r = await fetch('/api/memory/ingest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...ingestForm, tags }),
+      })
+      const j = await r.json()
+      setLastIngest(j)
+      setIngestForm({ doc_id: '', title: '', tags: '', text: '' })
+      setIngestOpen(false)
+      await fetchList()
+    } catch (e) { console.error(e) }
+    setIngesting(false)
+  }
+
+  const askQuery = async (q) => {
+    if (!q?.trim()) return
+    setMessages(m => [...m, { role: 'user', text: q }])
+    setQuery('')
+    setAsking(true)
+    try {
+      const r = await fetch('/api/memory/query', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: q, top_k: 7 }),
+      })
+      const j = await r.json()
+      setMessages(m => [...m, {
+        role: 'ai',
+        text: j.answer,
+        sources: j.sources || [],
+        retrieved: j.retrieved,
+        reranked_to: j.reranked_to,
+      }])
+    } catch (e) {
+      setMessages(m => [...m, { role: 'ai', text: `⚠️ Error: ${e.message}`, sources: [] }])
+    }
+    setAsking(false)
+  }
 
   return (
-    <div className="animate-slide-in max-w-5xl">
+    <div className="animate-slide-in">
       <GradientBanner
         from="from-indigo-600" via="via-violet-600" to="to-fuchsia-600"
         icon={Brain}
         title="Business Memory"
-        subtitle="Ask anything — Sentinel has indexed every invoice, order, and message."
+        subtitle="AI-powered RAG · GPT-5 · Parent-child chunking · BM25 + LLM reranker · Recency-aware"
       />
 
-      <Card className="p-2 mb-4 relative" is3D={false}>
-        <div className="flex items-center gap-3 px-3">
-          <Search className="h-4 w-4 text-zinc-500 shrink-0" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="e.g. Show me all customers with overdue balances..."
-            className="flex-1 bg-transparent py-3 text-[15px] text-zinc-100 placeholder:text-zinc-600 focus:outline-none"
-          />
-          <div className="flex items-center gap-1.5 px-2 py-1 rounded border border-zinc-800 bg-zinc-900 text-[10px] text-zinc-500">
-            <Sparkles className="h-3 w-3 text-indigo-400" /> AI
-          </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        {/* Sidebar: Document Library */}
+        <div className="lg:col-span-4 space-y-3">
+          <Card className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Database className="h-4 w-4 text-indigo-400" />
+                <div className="text-sm font-semibold text-zinc-100">Knowledge Base</div>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 font-medium">{docs.length}</span>
+              </div>
+              <button onClick={fetchList} className="h-7 w-7 rounded-md hover:bg-zinc-800 flex items-center justify-center transition" title="Refresh">
+                <RefreshCw className={`h-3.5 w-3.5 text-zinc-500 ${loadingList ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
+            <div className="space-y-2 max-h-[380px] overflow-y-auto">
+              {docs.length === 0 && !loadingList && (
+                <div className="text-center py-6">
+                  <FileText className="h-8 w-8 text-zinc-700 mx-auto mb-2" />
+                  <div className="text-xs text-zinc-500 mb-3">No documents yet</div>
+                  <button onClick={seedDemo} className="text-[11px] px-3 py-1.5 rounded-md bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/20 transition font-medium">
+                    ✨ Load Demo Data
+                  </button>
+                </div>
+              )}
+              {docs.map((d) => (
+                <div key={d.doc_id} className="group p-2.5 rounded-lg border border-zinc-800/70 hover:border-indigo-500/40 hover:bg-zinc-900/60 transition">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[13px] font-semibold text-zinc-100 truncate">{d.title || d.doc_id}</div>
+                      <div className="text-[10px] text-zinc-500 font-mono truncate">{d.doc_id}</div>
+                    </div>
+                    <button onClick={() => deleteDoc(d.doc_id)} className="opacity-0 group-hover:opacity-100 h-6 w-6 rounded hover:bg-rose-500/10 flex items-center justify-center text-zinc-500 hover:text-rose-400 transition" title="Delete">
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                    {(d.tags || []).slice(0, 3).map(t => (
+                      <span key={t} className="text-[9px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400">{t}</span>
+                    ))}
+                    <span className="text-[9px] text-zinc-500 ml-auto">{d.chunks} chunks</span>
+                  </div>
+                  <div className="text-[10px] text-zinc-600 mt-1">
+                    Updated {new Date(d.updated_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2 mt-3 pt-3 border-t border-zinc-800">
+              <button onClick={() => setIngestOpen(!ingestOpen)} className="flex-1 text-[11px] px-3 py-2 rounded-md bg-gradient-to-r from-indigo-500 to-violet-600 text-white font-medium hover:opacity-90 flex items-center justify-center gap-1.5 transition">
+                <Upload className="h-3 w-3" /> Ingest / Update Doc
+              </button>
+              <button onClick={seedDemo} className="text-[11px] px-3 py-2 rounded-md border border-zinc-800 text-zinc-300 hover:border-indigo-500/40 hover:bg-indigo-500/5 transition" title="Re-seed demo data">
+                Reset
+              </button>
+            </div>
+          </Card>
+
+          {/* Ingest Form */}
+          {ingestOpen && (
+            <Card className="p-4 animate-slide-in border-indigo-500/40" is3D={false}>
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-sm font-semibold text-zinc-100 flex items-center gap-2">
+                  <Upload className="h-4 w-4 text-indigo-400" /> Ingest Document
+                </div>
+                <button onClick={() => setIngestOpen(false)} className="text-zinc-500 hover:text-zinc-200"><XClose className="h-4 w-4" /></button>
+              </div>
+              <div className="space-y-2">
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium">Doc ID (unique)</label>
+                  <input value={ingestForm.doc_id} onChange={e => setIngestForm({ ...ingestForm, doc_id: e.target.value })} placeholder="e.g. policy-refund" className="w-full mt-1 bg-zinc-900 border border-zinc-800 rounded-md px-2 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-indigo-500/50 font-mono" />
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium">Title</label>
+                  <input value={ingestForm.title} onChange={e => setIngestForm({ ...ingestForm, title: e.target.value })} placeholder="e.g. Refund Policy" className="w-full mt-1 bg-zinc-900 border border-zinc-800 rounded-md px-2 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-indigo-500/50" />
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium">Tags (comma-separated)</label>
+                  <input value={ingestForm.tags} onChange={e => setIngestForm({ ...ingestForm, tags: e.target.value })} placeholder="policy, ops" className="w-full mt-1 bg-zinc-900 border border-zinc-800 rounded-md px-2 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-indigo-500/50" />
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium">Content</label>
+                  <textarea value={ingestForm.text} onChange={e => setIngestForm({ ...ingestForm, text: e.target.value })} placeholder="Paste the full document content..." rows={6} className="w-full mt-1 bg-zinc-900 border border-zinc-800 rounded-md px-2 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-indigo-500/50 resize-none" />
+                </div>
+                <button onClick={submitIngest} disabled={ingesting || !ingestForm.doc_id || !ingestForm.text} className="w-full py-2 rounded-md bg-gradient-to-r from-indigo-500 to-violet-600 text-white text-sm font-medium disabled:opacity-50 hover:opacity-90 transition flex items-center justify-center gap-2">
+                  {ingesting ? <><Loader2 className="h-4 w-4 animate-spin" /> Ingesting...</> : <><Upload className="h-4 w-4" /> Upsert Document</>}
+                </button>
+                <div className="text-[10px] text-zinc-500">💡 Re-using an existing doc_id will UPSERT (delete old chunks, insert new).</div>
+              </div>
+            </Card>
+          )}
+
+          {lastIngest && lastIngest.success && (
+            <Card className="p-3 border-emerald-500/30 bg-emerald-500/5" is3D={false}>
+              <div className="text-xs font-semibold text-emerald-300 flex items-center gap-2 mb-1">
+                <CheckCircle2 className="h-3.5 w-3.5" /> {lastIngest.upsert === 'UPDATED' ? 'UPDATED — old vectors purged' : 'INSERTED'}
+              </div>
+              <div className="text-[10px] text-zinc-400 font-mono">
+                {lastIngest.chunks_inserted} chunks ingested · {lastIngest.old_chunks_replaced} old chunks removed
+              </div>
+            </Card>
+          )}
         </div>
-      </Card>
 
-      <div className="flex flex-wrap gap-2 mb-8">
-        {suggestions.map((s) => (
-          <button
-            key={s}
-            onClick={() => setQuery(s)}
-            className="px-3 py-1.5 rounded-full text-xs bg-zinc-900/60 border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700 transition"
-          >
-            {s}
-          </button>
-        ))}
-      </div>
+        {/* Main Chat Area */}
+        <div className="lg:col-span-8">
+          <Card className="p-0 overflow-hidden" is3D={false}>
+            {/* Chat messages */}
+            <div className="min-h-[420px] max-h-[560px] overflow-y-auto p-5 space-y-4">
+              {messages.length === 0 && (
+                <div className="text-center py-10">
+                  <div className="inline-block h-14 w-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center glow-indigo mb-4">
+                    <Sparkles className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="text-lg font-semibold text-zinc-100 mb-1">Ask your business anything</div>
+                  <div className="text-sm text-zinc-500 mb-5">Powered by GPT-5 · Recency-aware · Grounded in your data</div>
+                  <div className="flex flex-wrap gap-2 justify-center max-w-lg mx-auto">
+                    {suggestions.map(s => (
+                      <button key={s} onClick={() => askQuery(s)} className="text-xs px-3 py-1.5 rounded-full border border-zinc-800 bg-zinc-900/60 text-zinc-400 hover:text-indigo-300 hover:border-indigo-500/50 hover:bg-indigo-500/10 transition">
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-      {/* Results */}
-      <div className="animate-slide-in" key={query}>
-        {showInvoices && <InvoicesTable invoices={company.invoices} />}
-        {!showInvoices && showSales && <SalesNarrative />}
-        {!showInvoices && !showSales && <DefaultSummary company={company} />}
+              {messages.map((m, i) => (
+                <div key={i} className={`flex gap-3 ${m.role === 'user' ? 'justify-end' : ''}`}>
+                  {m.role === 'ai' && (
+                    <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shrink-0 glow-indigo">
+                      <Sparkles className="h-4 w-4 text-white" />
+                    </div>
+                  )}
+                  <div className={`max-w-[85%] ${m.role === 'user' ? '' : 'flex-1'}`}>
+                    <div className={`px-4 py-3 rounded-2xl text-sm whitespace-pre-wrap leading-relaxed ${
+                      m.role === 'user'
+                        ? 'bg-gradient-to-r from-indigo-500 to-violet-600 text-white'
+                        : 'bg-zinc-800/60 text-zinc-100 border border-zinc-700/70'
+                    }`}>{m.text}</div>
+
+                    {m.role === 'ai' && m.sources && m.sources.length > 0 && (
+                      <div className="mt-2 space-y-1.5">
+                        <div className="text-[10px] uppercase tracking-widest text-zinc-500 font-semibold flex items-center gap-2">
+                          <Database className="h-3 w-3" /> Sources · Retrieved {m.retrieved} → Reranked to {m.reranked_to}
+                        </div>
+                        {m.sources.map((s, si) => (
+                          <div key={si} className="p-2.5 rounded-lg border border-zinc-800 bg-zinc-900/40 text-xs">
+                            <div className="flex items-center justify-between mb-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 font-mono">#{si + 1}</span>
+                                <span className="font-semibold text-zinc-200">{s.title || s.doc_id}</span>
+                                <span className="text-[10px] text-zinc-500 font-mono">{s.doc_id}</span>
+                              </div>
+                              <span className="text-[10px] text-zinc-500 tabular-nums">score {s.score}</span>
+                            </div>
+                            <div className="text-zinc-400 line-clamp-2 leading-relaxed">{s.snippet}</div>
+                            <div className="flex items-center gap-3 mt-1.5">
+                              {(s.tags || []).map(t => (
+                                <span key={t} className="text-[9px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-500">{t}</span>
+                              ))}
+                              <span className="text-[9px] text-zinc-500 ml-auto flex items-center gap-1">
+                                <Clock className="h-2.5 w-2.5" /> Updated {new Date(s.updated_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              {asking && (
+                <div className="flex gap-3">
+                  <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center glow-indigo">
+                    <Sparkles className="h-4 w-4 text-white" />
+                  </div>
+                  <div className="bg-zinc-800/60 border border-zinc-700/70 px-4 py-3 rounded-2xl text-xs text-zinc-400 flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 animate-bounce" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: '0.15s' }} />
+                    <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: '0.3s' }} />
+                    <span className="ml-2 text-zinc-500">Retrieving top 7 · reranking with GPT-5 · generating answer…</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Input */}
+            <div className="p-3 border-t border-zinc-800 bg-zinc-900/40">
+              <div className="flex items-center gap-2">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                  <input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') askQuery(query) }}
+                    placeholder="Ask about invoices, clients, policies, inventory..."
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-9 pr-3 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/50 transition"
+                  />
+                </div>
+                <button onClick={() => askQuery(query)} disabled={asking || !query.trim()} className="h-10 px-4 rounded-lg bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-400 hover:to-violet-500 text-white text-sm font-medium flex items-center gap-1.5 shadow-lg shadow-indigo-500/30 disabled:opacity-40 transition">
+                  {asking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                  Ask
+                </button>
+              </div>
+              <div className="text-[10px] text-zinc-500 mt-2 flex items-center gap-3">
+                <span className="flex items-center gap-1"><span className="text-emerald-400">●</span> GPT-5 · BM25 + LLM Reranker</span>
+                <span>·</span>
+                <span>Top_k = 7 → 3</span>
+                <span>·</span>
+                <span>Recency-first system prompt</span>
+              </div>
+            </div>
+          </Card>
+        </div>
       </div>
     </div>
   )
